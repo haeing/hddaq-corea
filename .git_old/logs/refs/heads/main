@@ -1,4 +1,0 @@
-0000000000000000000000000000000000000000 97d516ae682db8623b1212d3dba379ef0416b53e axis <axis@geteb1.intra.j-parc.jp> 1761568359 +0900	clone: from git@github.com:hyptpc/hddaq.git
-97d516ae682db8623b1212d3dba379ef0416b53e 4f9a2242d499f183a7ec935cc82cabc92794eb07 axis <axis@geteb1.intra.j-parc.jp> 1763487663 +0900	commit: Update for E72.
-4f9a2242d499f183a7ec935cc82cabc92794eb07 543a16ab7c812f323cc7db04fbefc5e2eff3e552 axis <axis@geteb1.intra.j-parc.jp> 1763656018 +0900	commit: Add daq-ctrl-e72.
-543a16ab7c812f323cc7db04fbefc5e2eff3e552 ad2865a19675927cac1991bbd43fcc25ddbceee7 axis <axis@geteb1.intra.j-parc.jp> 1763656126 +0900	commit: Update vme01_node.
