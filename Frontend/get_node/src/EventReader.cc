@@ -33,6 +33,7 @@ EventReader::EventReader( void )
     m_item_size(),
     m_padded(),
     m_increment_event( false ),
+    m_event_id_offset_initialized( false ),
     m_event_id_offset( -1 ),
     m_cobo_header( new CoBoMasterHeader ),
     m_event_buf(),
@@ -76,8 +77,10 @@ EventReader::CheckHeaderFormat( void )
     send_warning_message( oss.str() );
     m_is_good = false;
   }
-  if( m_is_good && m_event_id_offset < 0 ){
+  // An initial event ID of zero gives a valid offset of -1.
+  if( m_is_good && !m_event_id_offset_initialized ){
     m_event_id_offset = m_event_id - 1;
+    m_event_id_offset_initialized = true;
   }
 }
 
@@ -90,6 +93,7 @@ EventReader::Clear( void )
   m_counter = 0;
   m_event_counter = 0;
   m_increment_event = false;
+  m_event_id_offset_initialized = false;
   m_event_id_offset = -1;
   m_asad_flag.clear();
   m_event_buf.clear();

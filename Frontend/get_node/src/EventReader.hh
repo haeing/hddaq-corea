@@ -120,6 +120,7 @@ private:
   uint32_t              m_padded;
   // data
   bool                  m_increment_event;
+  bool                  m_event_id_offset_initialized;
   int32_t               m_event_id_offset;
   CoBoMasterHeader*     m_cobo_header;
   std::vector<uint32_t> m_data_buf32; // Partial
