@@ -16,7 +16,9 @@ namespace
 {
   const int max_polling   = 2000000;     //maximum count until time-out
   const int max_try       = 100;         //maximum count to check data ready
-  const int max_data_size = 1000000; //maximum datasize by byte unit
+  // Four AsAds, four AGETs, 68 channels and 512 buckets, plus GET/HDDAQ headers.
+  // 3 MiB also accommodates the larger 32-bit partial-readout representation.
+  const int max_data_size = 3*1024*1024; // maximum datasize in bytes
   DaqMode     g_daq_mode = DM_NORMAL;
   int         g_cobo_id = -1;
   EventReader g_event_reader;

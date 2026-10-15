@@ -307,13 +307,22 @@ int ReaderThread::active_loop()
     if (status>0) break;
     else if (status<0) return status;
 
-    checkHeader(header[0], name.str());
+    if (checkHeader(header[0], name.str())<0) break;
 
-    size_t trans_byte = (header[1] - 2) * sizeof(unsigned int);
-    size_t rest_byte
-      = checkDataSize(m_ringbuf_len*sizeof(unsigned int),
-		      trans_byte, name.str());
-    if (rest_byte<0) continue;
+    // RingBuffer/EventBuffer capacities are bytes; the wire length is words.
+    // Include the two words already read, and reject rather than truncate an
+    // oversized fragment (its original length would reach BuilderThread).
+    if (header[1] < 8 ||
+        header[1] > static_cast<size_t>(m_ringbuf_len)/sizeof(unsigned int)) {
+      std::ostringstream msg;
+      msg << name.str() << ": ERROR (Invalid fragment size): "
+          << static_cast<size_t>(header[1])*sizeof(unsigned int)
+          << " bytes, buffer capacity " << m_ringbuf_len << " bytes";
+      GlobalMessageClient::getInstance().sendString(MT_ERROR, msg.str());
+      break;
+    }
+    size_t trans_byte = (static_cast<size_t>(header[1]) - 2) * sizeof(unsigned int);
+    size_t rest_byte = 0;
 
     if (updateEventData(client, header, trans_byte, rest_byte)!=0)
       break;

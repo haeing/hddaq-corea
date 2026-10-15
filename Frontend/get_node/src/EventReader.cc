@@ -248,32 +248,52 @@ EventReader::ReadOneBlock( void )
   if( eof() )
     return;
   m_istream->read( reinterpret_cast<char*>( m_header ), sizeof(GetHeader) );
+  if( !*m_istream )
+    return;
   DecodeHeader();
   CheckHeaderFormat();
   if( !m_is_good )
     return;
   uint32_t evnum = m_event_id-m_event_id_offset-1;
   switch( m_frame_type ){
-  case GetHeader::kPartialRead: {
+  case GetHeader::kPartialRead:
+  case GetHeader::kFullRead: {
+    const uint32_t expected_item_size =
+      m_frame_type == GetHeader::kFullRead ? sizeof(uint16_t) : sizeof(uint32_t);
+    const uint64_t payload_bytes = uint64_t(m_n_data)*m_item_size;
+    const uint64_t header_bytes = uint64_t(m_header_size)*256;
+    const uint64_t frame_bytes = uint64_t(m_frame_size)*256;
+    if( m_item_size != expected_item_size ||
+        m_cobo_id >= NumOfCobo || m_asad_id >= NumOfAsAd ||
+        header_bytes < sizeof(GetHeader) || frame_bytes < header_bytes ||
+        payload_bytes > frame_bytes-header_bytes ||
+        m_n_data > NumOfAGet*NumOfChannel*512 ){
+      send_warning_message( "invalid GET frame size, item size or node ID" );
+      m_is_good = false;
+      return;
+    }
     if( m_event_buf[evnum].empty() ){
       m_event_buf[evnum].resize( NumOfAsAd );
     }
-    uint32_t total_data_size = ( m_n_data + sizeof(GetHeader)/sizeof(uint32_t)
+    // HDDAQ block lengths are in 32-bit words; full-readout items are 16-bit.
+    uint32_t total_data_size = ( (payload_bytes+sizeof(uint32_t)-1)/sizeof(uint32_t)
+                                + sizeof(GetHeader)/sizeof(uint32_t)
 				 + 2 ); // magic+size
     m_event_buf[evnum][m_asad_id].resize( total_data_size );
     auto itr = m_event_buf[evnum][m_asad_id].begin();
     *(itr++) = kAsAdMagic;
     *(itr++) = total_data_size;
     std::memcpy( &( *itr ), m_header, sizeof(GetHeader) );
-    m_istream->read( reinterpret_cast<char*>
-		     ( &( *( itr + sizeof(GetHeader)/sizeof(uint32_t) ) ) ),
-                     sizeof(uint32_t)*m_n_data );
+    m_istream->ignore( header_bytes-sizeof(GetHeader) );
+    char* payload = reinterpret_cast<char*>(m_event_buf[evnum][m_asad_id].data())
+      + 2*sizeof(uint32_t) + sizeof(GetHeader);
+    std::memset( payload, 0,
+                 (total_data_size-2)*sizeof(uint32_t)-sizeof(GetHeader) );
+    m_istream->read( payload, payload_bytes );
+    if( !*m_istream )
+      return;
     m_asad_flag[m_event_id].set( m_asad_id );
     break;
-  }
-  case GetHeader::kFullRead: {
-    send_fatal_message( "not support full read mode!" );
-    std::exit( EXIT_FAILURE );
   }
   default:
     std::cerr << FUNC_NAME << " unknown frame type=" << m_frame_type
